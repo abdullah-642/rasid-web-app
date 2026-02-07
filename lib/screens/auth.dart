@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../logic.dart';
 import '../theme.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,6 +19,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _nameController = TextEditingController();
   bool _isLogin = true;
   bool _isLoading = false;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('saved_email');
+    final password = prefs.getString('saved_password');
+    final remember = prefs.getBool('remember_me') ?? false;
+
+    if (remember && email != null && password != null) {
+      if (mounted) {
+        setState(() {
+          _rememberMe = true;
+          _emailController.text = email;
+          _passwordController.text = password;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberMe) {
+      await prefs.setString('saved_email', _emailController.text.trim());
+      await prefs.setString('saved_password', _passwordController.text);
+      await prefs.setBool('remember_me', true);
+    } else {
+      await _clearCredentials();
+    }
+  }
+
+  Future<void> _clearCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('saved_email');
+    await prefs.remove('saved_password');
+    await prefs.setBool('remember_me', false);
+  }
 
   Future<void> _handleAuth() async {
     // Validate inputs
@@ -41,6 +85,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await ref
             .read(authProvider.notifier)
             .signIn(_emailController.text.trim(), _passwordController.text);
+
+        // Save credentials if Remember Me is checked
+        await _saveCredentials();
 
         if (mounted) {
           context.go('/');
@@ -195,6 +242,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       prefixIcon: Icon(Icons.lock_outline_rounded),
                     ),
                   ),
+
+                  if (_isLogin) ...[
+                    const SizedBox(height: 16),
+                    CheckboxListTile(
+                      value: _rememberMe,
+                      onChanged: (val) {
+                        setState(() => _rememberMe = val ?? false);
+                      },
+                      title: const Text('تذكرني'),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: AppTheme.primaryColor,
+                    ),
+                  ],
 
                   const SizedBox(height: 40),
 

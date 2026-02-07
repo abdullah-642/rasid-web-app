@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
 
 // --- Auth Provider ---
@@ -332,6 +334,53 @@ class TasksNotifier extends StateNotifier<List<Tasks>> {
 
       final realTask = Tasks.fromMap(response);
       state = [realTask, ...state.where((t) => t.id != task.id)];
+
+      // Webhook Logic for specific user
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user?.email == 'kingmr642@gmail.com') {
+        try {
+          http.post(
+            Uri.parse(
+              'https://n8n.alqamuh.com/webhook/8ec6fd3b-659a-49c5-a07e-2bc7fc8826c7',
+            ),
+            body: {
+              'task_title': realTask.title,
+              'due_date_date':
+                  "${realTask.dueDate.year}-${realTask.dueDate.month.toString().padLeft(2, '0')}-${realTask.dueDate.day.toString().padLeft(2, '0')}",
+              'due_date_time':
+                  "${realTask.dueDate.hour.toString().padLeft(2, '0')}:${realTask.dueDate.minute.toString().padLeft(2, '0')}",
+              'priority': realTask.priority,
+              'created_at': DateTime.now().toIso8601String(),
+              'user_email': user!.email!,
+            },
+          );
+        } catch (e) {
+          // Ignore webhook errors
+        }
+      } else if (user?.email == 'sharoofy16@gmail.com') {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final webhookUrl =
+              prefs.getString('sharoofy_webhook') ??
+              'https://n8n.alqamuh.com/webhook/8ec6fd3b-659a-49c5-a07e-2bc7fc8826c7';
+
+          http.post(
+            Uri.parse(webhookUrl),
+            body: {
+              'task_title': realTask.title,
+              'due_date_date':
+                  "${realTask.dueDate.year}-${realTask.dueDate.month.toString().padLeft(2, '0')}-${realTask.dueDate.day.toString().padLeft(2, '0')}",
+              'due_date_time':
+                  "${realTask.dueDate.hour.toString().padLeft(2, '0')}:${realTask.dueDate.minute.toString().padLeft(2, '0')}",
+              'priority': realTask.priority,
+              'created_at': DateTime.now().toIso8601String(),
+              'user_email': user!.email!,
+            },
+          );
+        } catch (e) {
+          // Ignore webhook errors
+        }
+      }
     } catch (e) {
       state = state.where((t) => t.id != task.id).toList();
     }
@@ -379,6 +428,37 @@ class TasksNotifier extends StateNotifier<List<Tasks>> {
           .eq('id', id);
     } catch (e) {
       // revert
+    }
+  }
+
+  Future<void> deleteTask(String id) async {
+    final previousState = state;
+    state = state.where((t) => t.id != id).toList();
+    try {
+      await Supabase.instance.client.from('tasks').delete().eq('id', id);
+    } catch (e) {
+      state = previousState;
+    }
+  }
+
+  Future<void> updateTask(Tasks task) async {
+    state = [
+      for (final t in state)
+        if (t.id == task.id) task else t,
+    ];
+
+    try {
+      await Supabase.instance.client
+          .from('tasks')
+          .update({
+            'title': task.title,
+            'due_date': task.dueDate.toIso8601String(),
+            'priority': task.priority,
+            'is_completed': task.isCompleted,
+          })
+          .eq('id', task.id);
+    } catch (e) {
+      // revert?
     }
   }
 }

@@ -196,7 +196,10 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1200),
-            child: RepaintBoundary(child: widget.child),
+            child: PageStorage(
+              bucket: PageStorageBucket(),
+              child: RepaintBoundary(child: widget.child),
+            ),
           ),
         ),
       ),

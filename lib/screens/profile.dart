@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../logic.dart';
 import '../theme.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -105,18 +106,20 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              _buildDivider(),
-              _buildSettingItem(
-                context,
-                icon: Icons.chat_bubble_outline,
-                title: 'معرف المحاسب (Telegram ID)',
-                onTap: () => _showEditAccountantIdDialog(context, user),
-                trailing: const Icon(
-                  Icons.edit,
-                  size: 16,
-                  color: AppTheme.textSecondary,
+              if (user?.email == 'kingmr642@gmail.com') ...[
+                _buildDivider(),
+                _buildSettingItem(
+                  context,
+                  icon: Icons.chat_bubble_outline,
+                  title: 'معرف المحاسب (Telegram ID)',
+                  onTap: () => _showEditAccountantIdDialog(context, user),
+                  trailing: const Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
-              ),
+              ],
             ]),
 
             const SizedBox(height: 24),
@@ -136,6 +139,20 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () {},
               ),
               _buildDivider(),
+              if (user?.email == 'sharoofy16@gmail.com') ...[
+                _buildSettingItem(
+                  context,
+                  icon: Icons.link,
+                  title: 'إعدادات Webhook',
+                  onTap: () => _showEditWebhookDialog(context),
+                  trailing: const Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                _buildDivider(),
+              ],
               _buildSettingItem(
                 context,
                 icon: Icons.notifications_none,
@@ -498,6 +515,66 @@ class ProfileScreen extends ConsumerWidget {
                     SnackBar(
                       content: Text('خطأ: $e'),
                       backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditWebhookDialog(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentWebhook =
+        prefs.getString('sharoofy_webhook') ??
+        'https://n8n.alqamuh.com/webhook/8ec6fd3b-659a-49c5-a07e-2bc7fc8826c7';
+
+    final controller = TextEditingController(text: currentWebhook);
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إعدادات Webhook'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'قم بتعيين رابط Webhook الذي سيتم إرسال بيانات المهام إليه.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Webhook URL',
+                prefixIcon: Icon(Icons.link),
+                hintText: 'https://example.com/webhook',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newUrl = controller.text.trim();
+              if (newUrl.isNotEmpty) {
+                await prefs.setString('sharoofy_webhook', newUrl);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تم تحديث Webhook بنجاح'),
+                      backgroundColor: Colors.green,
                     ),
                   );
                 }

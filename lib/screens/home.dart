@@ -7,11 +7,21 @@ import '../models.dart';
 import '../theme.dart';
 import '../utils.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final user = ref.watch(authProvider);
     final userName = user?.userMetadata?['full_name'] ?? 'أحمد';
     // const isDark = false; // Force Light/Emerald Clarity
@@ -19,6 +29,7 @@ class DashboardScreen extends ConsumerWidget {
     return Focus(
       autofocus: true,
       child: SingleChildScrollView(
+        key: const PageStorageKey('dashboard_scroll'),
         padding: const EdgeInsets.all(32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
