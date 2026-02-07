@@ -1,0 +1,16 @@
+{
+  "$schema": "https://developers.cloudflare.com/pages/platform/build-configuration",
+  "version": 1,
+  "build": {
+    "command": "flutter build web --release",
+    "cwd": "/",
+    "watchPaths": [
+      "lib/**",
+      "web/**",
+      "pubspec.yaml"
+    ]
+  },
+  "deploy": {
+    "outputDirectory": "build/web"
+  }
+}
