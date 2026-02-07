@@ -1,0 +1,9 @@
+{
+    "build": {
+        "command": "flutter build web --release",
+        "publish": "build/web",
+        "environment": {
+            "FLUTTER_VERSION": "stable"
+        }
+    }
+}
