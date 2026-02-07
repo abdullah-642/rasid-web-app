@@ -203,6 +203,14 @@ class ProfileScreen extends ConsumerWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
+                    // Clear saved credentials
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.remove('saved_email');
+                    await prefs.remove('saved_password');
+                    await prefs.setBool('remember_me', false);
+                    await prefs.setBool('auto_login', false);
+
+                    // Sign out
                     await ref.read(authProvider.notifier).signOut();
                     if (context.mounted) {
                       context.go('/login');

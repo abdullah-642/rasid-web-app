@@ -32,6 +32,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final email = prefs.getString('saved_email');
     final password = prefs.getString('saved_password');
     final remember = prefs.getBool('remember_me') ?? false;
+    final autoLogin = prefs.getBool('auto_login') ?? false;
 
     if (remember && email != null && password != null) {
       if (mounted) {
@@ -40,6 +41,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _emailController.text = email;
           _passwordController.text = password;
         });
+
+        // Auto-login if enabled and credentials exist
+        if (autoLogin && mounted) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _handleAuth();
+            }
+          });
+        }
       }
     }
   }
@@ -50,6 +60,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await prefs.setString('saved_email', _emailController.text.trim());
       await prefs.setString('saved_password', _passwordController.text);
       await prefs.setBool('remember_me', true);
+      await prefs.setBool('auto_login', true);
     } else {
       await _clearCredentials();
     }
@@ -60,6 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await prefs.remove('saved_email');
     await prefs.remove('saved_password');
     await prefs.setBool('remember_me', false);
+    await prefs.setBool('auto_login', false);
   }
 
   Future<void> _handleAuth() async {
@@ -244,16 +256,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
 
                   if (_isLogin) ...[
-                    const SizedBox(height: 16),
-                    CheckboxListTile(
-                      value: _rememberMe,
-                      onChanged: (val) {
-                        setState(() => _rememberMe = val ?? false);
-                      },
-                      title: const Text('تذكرني'),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      activeColor: AppTheme.primaryColor,
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: CheckboxListTile(
+                        value: _rememberMe,
+                        onChanged: (val) {
+                          setState(() => _rememberMe = val ?? false);
+                        },
+                        title: const Text(
+                          'تذكرني',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'سيتم تسجيل دخولك تلقائياً في المرات القادمة',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        activeColor: AppTheme.primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ],
 
